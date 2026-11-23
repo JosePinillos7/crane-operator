@@ -4,8 +4,8 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#111a24">
-  <meta name="description" content="A visual mockup for Crane Operator, an educational tower crane simulator.">
-  <title>Crane Operator - Stage 3 Load Interactions</title>
+  <meta name="description" content="An educational tower crane simulator with illustrative chart-based capacity warnings.">
+  <title>Crane Operator - Stage 4 Capacity and Safety</title>
   <style>
     :root {
       color-scheme: dark;
@@ -142,6 +142,12 @@
       font-weight: 650;
     }
     .state-pill .state-dot { background: var(--green); box-shadow: 0 0 0 4px rgba(96, 212, 160, .11); }
+    .state-pill.is-overloaded {
+      border-color: rgba(255, 116, 104, .35);
+      color: #ffaaa1;
+      background: rgba(255, 116, 104, .08);
+    }
+    .state-pill.is-overloaded .state-dot { background: var(--red); box-shadow: 0 0 0 4px rgba(255, 116, 104, .12); }
 
     .workspace {
       display: grid;
@@ -495,6 +501,104 @@
     }
     .chart-key { display: inline-flex; align-items: center; gap: 6px; }
     .chart-key i { width: 8px; height: 8px; border-radius: 50%; background: var(--yellow); }
+    .chart-key.actual i { background: #83d9ec; }
+    .chart-key.chart-radius i { background: var(--green); }
+    .chart-key.current-load i { background: var(--red); }
+
+    .capacity-panel {
+      padding: 13px;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      background: rgba(8, 15, 21, .22);
+    }
+    .capacity-panel h3 {
+      margin: 0 0 11px;
+      color: #dce5e7;
+      font-size: 11px;
+      font-weight: 730;
+    }
+    .capacity-values {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 9px;
+      margin-bottom: 11px;
+    }
+    .capacity-value {
+      min-width: 0;
+      padding: 8px;
+      border: 1px solid rgba(209, 224, 229, .08);
+      border-radius: 9px;
+      background: rgba(255, 255, 255, .025);
+    }
+    .capacity-value small {
+      display: block;
+      margin-bottom: 4px;
+      color: var(--muted);
+      font-size: 8px;
+      font-weight: 700;
+      letter-spacing: .06em;
+      text-transform: uppercase;
+    }
+    .capacity-value strong {
+      display: block;
+      overflow-wrap: anywhere;
+      color: #f0f3f1;
+      font-size: 13px;
+      font-variant-numeric: tabular-nums;
+    }
+    .capacity-indicator {
+      padding: 9px 10px;
+      border: 1px solid rgba(96, 212, 160, .22);
+      border-radius: 9px;
+      color: #a9e5c4;
+      background: rgba(96, 212, 160, .08);
+    }
+    .capacity-indicator[data-level="warning"] {
+      border-color: rgba(255, 200, 87, .3);
+      color: #ffdc8c;
+      background: rgba(255, 200, 87, .09);
+    }
+    .capacity-indicator[data-level="overload"] {
+      border-color: rgba(255, 116, 104, .35);
+      color: #ffaaa1;
+      background: rgba(255, 116, 104, .1);
+    }
+    .capacity-indicator[data-level="unloaded"] {
+      border-color: rgba(169, 197, 205, .18);
+      color: #b6c8ce;
+      background: rgba(169, 197, 205, .05);
+    }
+    .capacity-indicator strong {
+      display: block;
+      margin-bottom: 3px;
+      font-size: 10px;
+      font-weight: 750;
+    }
+    .capacity-indicator span {
+      display: block;
+      font-size: 9px;
+      line-height: 1.4;
+    }
+    .capacity-disclaimer {
+      margin: 8px 0 0;
+      color: #82939a;
+      font-size: 8px;
+      line-height: 1.45;
+    }
+
+    @keyframes crane-tip-over {
+      0% { transform: rotate(0deg); }
+      24% { transform: rotate(0deg); }
+      100% { transform: rotate(27deg); }
+    }
+    .site-frame.is-overloaded #crane-structure {
+      transform-box: view-box;
+      transform-origin: 66% 85.7%;
+      animation: crane-tip-over 1.2s cubic-bezier(.36, .05, .72, .4) forwards;
+    }
+    .site-frame.is-overloaded {
+      box-shadow: inset 0 0 0 3px rgba(255, 88, 75, .6);
+    }
 
     .history-panel { min-height: 100%; }
     .history-empty {
@@ -606,8 +710,8 @@
         </div>
       </div>
       <div class="topbar-right">
-        <span class="stage-label">Stage 03 / Load interactions</span>
-        <span class="preview-pill"><i class="preview-dot"></i>Pickup &amp; delivery enabled</span>
+        <span class="stage-label">Stage 04 / Capacity and safety</span>
+        <span class="preview-pill"><i class="preview-dot"></i>Capacity monitoring enabled</span>
       </div>
     </header>
 
@@ -617,7 +721,7 @@
           <h1>Lift with a plan.</h1>
           <p class="page-subtitle">A learning-focused tower crane simulator. Survey the site, review your load, and plan each placement.</p>
         </div>
-        <div class="state-pill"><i class="state-dot"></i>Ready to start</div>
+        <div class="state-pill" id="simulation-status"><i class="state-dot"></i><span id="simulation-status-text">Ready to start</span></div>
       </div>
 
       <div class="workspace">
@@ -730,6 +834,7 @@
                 <path d="m626 417 29-14 30 10-30 15z" fill="#f0bd4d"/>
 
                 <!-- Tower mast lattice -->
+                <g id="crane-structure">
                 <path d="M644 130 661 136 661 417 644 411Z" fill="url(#steel)" stroke="#d79729" stroke-width="1"/>
                 <path d="M661 136 675 128 675 409 661 417Z" fill="#d99c36" stroke="#c88729" stroke-width="1"/>
                 <path d="M644 130 658 123 675 128 661 136Z" fill="#ffe08a" stroke="#d79729" stroke-width="1"/>
@@ -801,6 +906,7 @@
                   <path d="m790 367 45 16 44-19" fill="none" stroke="#e6d19f" stroke-width="2" stroke-dasharray="5 5" opacity=".65"/>
                 </g>
                 </g>
+                </g>
 
                 <!-- Site equipment and safety markers -->
                 <path d="m89 389 46-17 51 18-47 18z" fill="#d99f38"/>
@@ -858,7 +964,7 @@
             <div class="panel-heading">
               <div>
                 <h2 id="chart-title">Illustrative load chart</h2>
-                <p>Reference capacities by trolley radius</p>
+                <p>Exact chart rows; next larger radius between rows</p>
               </div>
               <span class="chart-label">Educational only</span>
             </div>
@@ -884,7 +990,7 @@
                   <text x="341" y="200" text-anchor="middle">Trolley radius (ft)</text>
                   <text transform="translate(13 95) rotate(-90)" text-anchor="middle">Capacity (lb)</text>
                 </g>
-                <path d="M66 24H203V73H341V101H478V115H616V126" fill="none" stroke="#ffc857" stroke-width="3" stroke-linejoin="round"/>
+                <path d="M66 24V73H203V101H341V115H478V125.5H616" fill="none" stroke="#ffc857" stroke-width="3" stroke-linejoin="round"/>
                 <g fill="#1e2b34" stroke="#ffd779" stroke-width="2.5">
                   <circle cx="66" cy="24" r="5"/>
                   <circle cx="203" cy="73" r="5"/>
@@ -899,13 +1005,22 @@
                   <text x="478" y="108" text-anchor="middle">7,000</text>
                   <text x="610" y="119" text-anchor="end">5,500</text>
                 </g>
-                <path d="M66 24V164" stroke="#8fd6af" stroke-width="1.5" stroke-dasharray="4 4" opacity=".8"/>
-                <circle cx="66" cy="24" r="8" fill="none" stroke="#8fd6af" stroke-width="1.5" opacity=".75"/>
+                <g id="chart-markers" aria-hidden="true">
+                  <path id="actual-radius-marker" d="M66 24V164" stroke="#83d9ec" stroke-width="1.5" stroke-dasharray="3 4" opacity=".9"/>
+                  <circle id="actual-radius-axis-dot" cx="66" cy="164" r="4" fill="#83d9ec" stroke="#1e2b34" stroke-width="1.5"/>
+                  <path id="chart-radius-marker" d="M66 24V164" stroke="#8fd6af" stroke-width="1.5" stroke-dasharray="4 4" opacity=".9"/>
+                  <circle id="chart-capacity-marker" cx="66" cy="24" r="7" fill="#1e2b34" stroke="#8fd6af" stroke-width="2.5"/>
+                  <path id="current-load-line" d="M66 164H66" stroke="#ff7468" stroke-width="1.5" stroke-dasharray="5 4" opacity=".9" style="display:none"/>
+                  <circle id="current-load-marker" cx="66" cy="164" r="5" fill="#ff7468" stroke="#1e2b34" stroke-width="1.5" style="display:none"/>
+                </g>
               </svg>
             </div>
             <div class="chart-foot">
-              <span class="chart-key"><i></i>Supplied illustrative chart values</span>
-              <span>Reference chart only - calculations are not active in this stage</span>
+              <span class="chart-key"><i></i>Illustrative capacity step chart</span>
+              <span class="chart-key actual"><i></i>Actual radius</span>
+              <span class="chart-key chart-radius"><i></i>Chart radius</span>
+              <span class="chart-key current-load"><i></i>Attached load</span>
+              <span id="chart-marker-summary">Actual radius: 50 ft · Chart radius: 50 ft · Attached load: N/A</span>
             </div>
           </section>
         </section>
@@ -981,6 +1096,20 @@
                 </div>
                 <div class="load-weight" id="selected-load-weight">2,000 lb</div>
               </div>
+              <section class="capacity-panel" aria-labelledby="capacity-title">
+                <h3 id="capacity-title">Capacity Utilization and Risk Indicator</h3>
+                <div class="capacity-values">
+                  <div class="capacity-value"><small>Allowed capacity</small><strong id="allowed-capacity">20,000 lb</strong></div>
+                  <div class="capacity-value"><small>Chart radius</small><strong id="chart-radius-readout">50 ft</strong></div>
+                  <div class="capacity-value"><small>Attached payload</small><strong id="attached-payload-readout">N/A</strong></div>
+                  <div class="capacity-value"><small>Load utilization</small><strong id="load-utilization">N/A</strong></div>
+                </div>
+                <div class="capacity-indicator" id="capacity-indicator" data-level="unloaded" role="status" aria-live="polite">
+                  <strong id="capacity-indicator-title">No load attached</strong>
+                  <span id="capacity-indicator-detail">Utilization is N/A until a load is attached.</span>
+                </div>
+                <p class="capacity-disclaimer">Chart-based educational indicator only; it does not calculate actual crane stability.</p>
+              </section>
               <div>
                 <div class="field-label">Current target</div>
                 <div class="target-card">
@@ -1038,7 +1167,7 @@
           <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 3 2.8 19h18.4L12 3Z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><path d="M12 9v4m0 3h.01" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
           <span><strong>Educational simulator only.</strong> This simplified simulator is not a real crane specification, engineering tool, operator-training replacement, or source for real-world lifting or construction-site safety decisions.</span>
         </div>
-        <div class="footer-note">Stage 3 interaction preview - capacity and safety calculations, timer, score, and history logic arrive in later stages.</div>
+        <div class="footer-note">Stage 4 capacity and overload preview - timer, score, load history, and simulation lifecycle arrive in Stage 5.</div>
       </footer>
     </main>
   </div>
@@ -1059,6 +1188,7 @@
       const trolleyCarriage = document.getElementById("trolley-carriage");
       const hoistAssembly = document.getElementById("hoist-assembly");
       const attachedLoadVisual = document.getElementById("attached-load");
+      const siteFrame = document.querySelector(".site-frame");
       const loadChoice = document.getElementById("load-choice");
       const selectedLoadName = document.getElementById("selected-load-name");
       const selectedLoadWeight = document.getElementById("selected-load-weight");
@@ -1068,6 +1198,22 @@
       const interactionMessage = document.getElementById("interaction-message");
       const pickupMarker = document.getElementById("scene-pickup");
       const deliveryMarker = document.getElementById("scene-delivery");
+      const allowedCapacityReadout = document.getElementById("allowed-capacity");
+      const chartRadiusReadout = document.getElementById("chart-radius-readout");
+      const attachedPayloadReadout = document.getElementById("attached-payload-readout");
+      const utilizationReadout = document.getElementById("load-utilization");
+      const capacityIndicator = document.getElementById("capacity-indicator");
+      const capacityIndicatorTitle = document.getElementById("capacity-indicator-title");
+      const capacityIndicatorDetail = document.getElementById("capacity-indicator-detail");
+      const simulationStatus = document.getElementById("simulation-status");
+      const simulationStatusText = document.getElementById("simulation-status-text");
+      const actualRadiusMarker = document.getElementById("actual-radius-marker");
+      const actualRadiusAxisDot = document.getElementById("actual-radius-axis-dot");
+      const chartRadiusMarker = document.getElementById("chart-radius-marker");
+      const chartCapacityMarker = document.getElementById("chart-capacity-marker");
+      const currentLoadLine = document.getElementById("current-load-line");
+      const currentLoadMarker = document.getElementById("current-load-marker");
+      const chartMarkerSummary = document.getElementById("chart-marker-summary");
       const loadShapes = {
         "small-pallet": document.getElementById("load-shape-small"),
         "concrete-bundle": document.getElementById("load-shape-concrete"),
@@ -1080,11 +1226,19 @@
         { id: "steel-beams", name: "Steel beams", weight: 8000 },
         { id: "heavy-equipment", name: "Heavy equipment", weight: 12000 }
       ];
+      const capacityChart = [
+        { radius: 50, capacity: 20000 },
+        { radius: 75, capacity: 13000 },
+        { radius: 100, capacity: 9000 },
+        { radius: 125, capacity: 7000 },
+        { radius: 150, capacity: 5500 }
+      ];
       const pickupPoint = { radius: 50, angle: 0, height: 0 };
       const deliveryTarget = { radius: 75, angle: 90, height: 20 };
       const loadStatuses = new Map(loadCatalog.map((load) => [load.id, "available"]));
       let selectedLoadId = loadCatalog[0].id;
       let attachedLoadId = null;
+      let overloaded = false;
       const keyControls = {
         ArrowLeft: "jib-left",
         ArrowRight: "jib-right",
@@ -1149,6 +1303,99 @@
         return (Math.round(distance * 100) / 100).toFixed(2);
       }
 
+      function formatUtilization(value) {
+        return value.toFixed(2) + "%";
+      }
+
+      function capacityRowForRadius(radius) {
+        return capacityChart.find((row) => radius <= row.radius) || capacityChart[capacityChart.length - 1];
+      }
+
+      function updateChartMarkers(actualRadius, chartRow, attachedLoad) {
+        const plotLeft = 66;
+        const plotRight = 616;
+        const plotTop = 24;
+        const plotBottom = 164;
+        const xForRadius = (radius) => plotLeft + (radius - 50) * (plotRight - plotLeft) / 100;
+        const yForPounds = (pounds) => plotBottom - pounds * (plotBottom - plotTop) / 20000;
+        const actualX = xForRadius(actualRadius);
+        const chartX = xForRadius(chartRow.radius);
+        const capacityY = yForPounds(chartRow.capacity);
+
+        actualRadiusMarker.setAttribute("d", "M" + actualX + " " + plotTop + "V" + plotBottom);
+        actualRadiusAxisDot.setAttribute("cx", actualX);
+        chartRadiusMarker.setAttribute("d", "M" + chartX + " " + plotTop + "V" + plotBottom);
+        chartCapacityMarker.setAttribute("cx", chartX);
+        chartCapacityMarker.setAttribute("cy", capacityY);
+        if (attachedLoad) {
+          const loadY = yForPounds(attachedLoad.weight);
+          currentLoadLine.setAttribute("d", "M" + plotLeft + " " + loadY + "H" + actualX);
+          currentLoadMarker.setAttribute("cx", actualX);
+          currentLoadMarker.setAttribute("cy", loadY);
+          currentLoadLine.style.display = "";
+          currentLoadMarker.style.display = "";
+        } else {
+          currentLoadLine.style.display = "none";
+          currentLoadMarker.style.display = "none";
+        }
+
+        chartMarkerSummary.textContent =
+          "Actual radius: " + formatPosition(actualRadius) + " ft · Chart radius: " + chartRow.radius +
+          " ft · Attached load: " + (attachedLoad ? formatWeight(attachedLoad.weight) : "N/A");
+      }
+
+      function renderCapacity() {
+        const chartRow = capacityRowForRadius(state.radius);
+        const attachedLoad = attachedLoadId ? getLoad(attachedLoadId) : null;
+        const utilization = attachedLoad ? attachedLoad.weight / chartRow.capacity * 100 : null;
+
+        allowedCapacityReadout.textContent = formatWeight(chartRow.capacity);
+        chartRadiusReadout.textContent = chartRow.radius + " ft";
+        attachedPayloadReadout.textContent = attachedLoad ? formatWeight(attachedLoad.weight) : "N/A";
+        utilizationReadout.textContent = attachedLoad ? formatUtilization(utilization) : "N/A";
+        updateChartMarkers(state.radius, chartRow, attachedLoad);
+
+        if (!attachedLoad) {
+          capacityIndicator.dataset.level = "unloaded";
+          capacityIndicatorTitle.textContent = "No load attached";
+          capacityIndicatorDetail.textContent = "Utilization is N/A until a load is attached.";
+        } else if (utilization > 100) {
+          capacityIndicator.dataset.level = "overload";
+          capacityIndicatorTitle.textContent = "Overload - tip-over";
+          capacityIndicatorDetail.textContent = "Utilization exceeds 100%; crane movement has stopped.";
+        } else if (utilization >= 90) {
+          capacityIndicator.dataset.level = "warning";
+          capacityIndicatorTitle.textContent = "Capacity warning";
+          capacityIndicatorDetail.textContent = "Utilization is at or above the 90% warning threshold.";
+        } else {
+          capacityIndicator.dataset.level = "normal";
+          capacityIndicatorTitle.textContent = "Below warning threshold";
+          capacityIndicatorDetail.textContent = "Utilization is below 90% of illustrative chart capacity.";
+        }
+
+        if (utilization > 100 && !overloaded) {
+          triggerOverload(attachedLoad, chartRow);
+        }
+      }
+
+      function triggerOverload(load, chartRow) {
+        overloaded = true;
+        releaseAllInputs();
+        controls.forEach((button) => {
+          button.disabled = true;
+        });
+        loadChoice.disabled = true;
+        loadAction.disabled = true;
+        siteFrame.classList.add("is-overloaded");
+        simulationStatus.classList.add("is-overloaded");
+        simulationStatusText.textContent = "Overloaded";
+        showInteractionMessage(
+          "Overload: " + formatWeight(load.weight) + " exceeds the " + formatWeight(chartRow.capacity) +
+            " illustrative capacity at " + chartRow.radius + " ft. Crane movement has stopped.",
+          "rejected"
+        );
+      }
+
       function toCartesian(point) {
         const radians = point.angle * Math.PI / 180;
         return {
@@ -1203,7 +1450,7 @@
         const selectedLoad = getLoad(selectedLoadId);
         const displayedLoad = attachedLoadId ? getLoad(attachedLoadId) : selectedLoad;
 
-        loadChoice.disabled = attachedLoadId !== null || selectedLoad === null;
+        loadChoice.disabled = overloaded || attachedLoadId !== null || selectedLoad === null;
         Array.from(loadChoice.options).forEach((option) => {
           const load = getLoad(option.value);
           const status = loadStatuses.get(option.value);
@@ -1219,12 +1466,12 @@
           selectedLoadStatus.textContent = "Attached to hook";
           selectedLoadStatus.dataset.state = "attached";
           loadActionLabel.textContent = "Deliver at building target";
-          loadAction.disabled = false;
+          loadAction.disabled = overloaded;
         } else if (selectedLoad) {
           selectedLoadStatus.textContent = "Available to pick up";
           selectedLoadStatus.dataset.state = "available";
           loadActionLabel.textContent = "Pick up selected load";
-          loadAction.disabled = false;
+          loadAction.disabled = overloaded;
         } else {
           selectedLoadStatus.textContent = "All loads delivered";
           selectedLoadStatus.dataset.state = "delivered";
@@ -1237,9 +1484,11 @@
           shape.style.display = attachedLoadId === loadId ? "" : "none";
         });
         renderTarget();
+        renderCapacity();
       }
 
       function handleLoadAction() {
+        if (overloaded) return;
         if (attachedLoadId) {
           const load = getLoad(attachedLoadId);
           const distance = distance3d(currentCranePosition(), deliveryTarget);
@@ -1294,15 +1543,24 @@
       }
 
       function animate(timestamp) {
+        if (overloaded) return;
         if (previousFrame !== null) {
           const elapsedSeconds = (timestamp - previousFrame) / 1000;
           const jibDirection = Number(isPressed("jib-left")) - Number(isPressed("jib-right"));
           const trolleyDirection = Number(isPressed("trolley-out")) - Number(isPressed("trolley-in"));
           const hookDirection = Number(isPressed("hook-up")) - Number(isPressed("hook-down"));
 
-          if (jibDirection || trolleyDirection || hookDirection) {
+          if (trolleyDirection) {
+            const nextRadius = Math.max(50, Math.min(150, state.radius + trolleyDirection * 5 * elapsedSeconds));
+            if (nextRadius !== state.radius) {
+              state.radius = nextRadius;
+              renderPosition();
+              renderCapacity();
+              if (overloaded) return;
+            }
+          }
+          if (jibDirection || hookDirection) {
             state.jibAngle = normalizeAngle(state.jibAngle + jibDirection * 5 * elapsedSeconds);
-            state.radius = Math.max(50, Math.min(150, state.radius + trolleyDirection * 5 * elapsedSeconds));
             state.hookHeight = Math.max(0, Math.min(100, state.hookHeight + hookDirection * 3 * elapsedSeconds));
             renderPosition();
           }
@@ -1321,7 +1579,7 @@
           return;
         }
         const control = keyControls[event.code];
-        if (!control) return;
+        if (!control || overloaded) return;
         event.preventDefault();
         keyboardInputs.add(control);
         refreshControlStyles();
@@ -1336,6 +1594,7 @@
 
       controls.forEach((button) => {
         button.addEventListener("pointerdown", (event) => {
+          if (overloaded) return;
           event.preventDefault();
           pointerInputs.set(event.pointerId, button.dataset.control);
           button.setPointerCapture(event.pointerId);
