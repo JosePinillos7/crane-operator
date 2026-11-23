@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#111a24">
   <meta name="description" content="A visual mockup for Crane Operator, an educational tower crane simulator.">
-  <title>Crane Operator - Stage 2 Movement Preview</title>
+  <title>Crane Operator - Stage 3 Load Interactions</title>
   <style>
     :root {
       color-scheme: dark;
@@ -206,6 +206,7 @@
       backdrop-filter: blur(8px);
     }
     .site-chip .chip-dot { width: 7px; height: 7px; border-radius: 50%; background: #d99327; }
+    .site-chip.is-active { border-color: rgba(224, 149, 49, .8); box-shadow: 0 0 0 3px rgba(224, 149, 49, .18), 0 5px 16px rgba(26, 43, 45, .12); }
     .site-chip.pickup { left: 21%; bottom: 17%; }
     .site-chip.delivery { right: 7%; bottom: 33%; }
     .scene-legend {
@@ -350,6 +351,7 @@
     }
     .hook-key kbd { min-width: 21px; }
     .action-key {
+      width: 100%;
       display: flex;
       align-items: center;
       justify-content: space-between;
@@ -362,7 +364,12 @@
       background: rgba(255, 200, 87, .08);
       font-size: 10px;
       font-weight: 700;
+      text-align: left;
+      cursor: pointer;
+      touch-action: manipulation;
     }
+    .action-key:disabled { opacity: .48; cursor: default; }
+    .action-key:focus-visible { outline: 2px solid var(--yellow); outline-offset: 2px; }
     .action-key .action-caption { color: #b7a77e; font-size: 9px; font-weight: 560; }
     .stage-note { margin: 12px 0 0; color: #82929a; font-size: 9px; line-height: 1.45; }
     .stage-note strong { color: #c6d0d2; font-weight: 650; }
@@ -432,6 +439,37 @@
     .target-detail { padding-top: 7px; border-top: 1px solid rgba(232, 135, 98, .12); }
     .target-detail small { display: block; margin-bottom: 3px; color: #9b8076; font-size: 8px; font-weight: 680; letter-spacing: .08em; text-transform: uppercase; }
     .target-detail strong { color: #ead2c8; font-size: 10px; font-weight: 650; }
+    .load-status {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      margin-top: 5px;
+      color: #95bca8;
+      font-size: 9px;
+      font-weight: 670;
+    }
+    .load-status::before { width: 6px; height: 6px; border-radius: 50%; background: currentColor; content: ""; }
+    .load-status[data-state="attached"] { color: #ffd37b; }
+    .load-status[data-state="delivered"] { color: #8d9ba1; }
+    .interaction-message {
+      padding: 9px 10px;
+      border: 1px solid rgba(147, 195, 207, .16);
+      border-radius: 9px;
+      color: #b2cbd0;
+      background: rgba(115, 171, 183, .055);
+      font-size: 9px;
+      line-height: 1.45;
+    }
+    .interaction-message[data-state="success"] {
+      border-color: rgba(96, 212, 160, .2);
+      color: #a7dfc2;
+      background: rgba(96, 212, 160, .06);
+    }
+    .interaction-message[data-state="rejected"] {
+      border-color: rgba(255, 116, 104, .22);
+      color: #f0aaa2;
+      background: rgba(255, 116, 104, .06);
+    }
 
     .chart-panel { padding-bottom: 13px; }
     .chart-label {
@@ -568,8 +606,8 @@
         </div>
       </div>
       <div class="topbar-right">
-        <span class="stage-label">Stage 02 / Crane movement</span>
-        <span class="preview-pill"><i class="preview-dot"></i>Movement enabled</span>
+        <span class="stage-label">Stage 03 / Load interactions</span>
+        <span class="preview-pill"><i class="preview-dot"></i>Pickup &amp; delivery enabled</span>
       </div>
     </header>
 
@@ -600,8 +638,8 @@
             </div>
 
             <div class="site-frame">
-              <span class="site-chip pickup"><i class="chip-dot"></i>Pickup point</span>
-              <span class="site-chip delivery"><i class="chip-dot" style="background:#e88762"></i>Delivery target</span>
+              <span class="site-chip pickup is-active" id="scene-pickup"><i class="chip-dot"></i>Pickup point</span>
+              <span class="site-chip delivery" id="scene-delivery"><i class="chip-dot" style="background:#e88762"></i>Delivery target</span>
               <svg viewBox="0 -180 1000 700" role="img" aria-labelledby="site-title site-desc">
                 <title id="site-title">Isometric construction site with a tower crane</title>
                 <desc id="site-desc">A tower crane stands beside a partially built concrete structure on a marked construction site. Pickup and delivery locations are labeled.</desc>
@@ -734,11 +772,34 @@
                 <path d="M834 116v178" stroke="#5b6260" stroke-width="2.2"/>
                 <path d="M830 294h9" stroke="#353d3c" stroke-width="3"/>
                 <path d="M835 294v13c0 13-16 15-17 3" fill="none" stroke="#353d3c" stroke-width="4" stroke-linecap="round"/>
-                <path d="m795 326 39-16 40 13-40 17z" fill="#d49d42" stroke="#896729" stroke-width="1.2"/>
-                <path d="m795 326 40 14v23l-40-14z" fill="#9a7138" stroke="#75572e" stroke-width="1.2"/>
-                <path d="m835 340 39-17v23l-39 17z" fill="#725a38" stroke="#5b4931" stroke-width="1.2"/>
-                <path d="m802 328 33 11m-35-5 33 11m-8-16v23m14-27v27m14-33v27" stroke="#edc16c" stroke-width="1.3" opacity=".8"/>
-                <path d="m790 363 45 16 44-19" fill="none" stroke="#e6d19f" stroke-width="2" stroke-dasharray="5 5" opacity=".65"/>
+                <g id="attached-load" style="display:none">
+                  <g id="load-shape-small">
+                    <path d="m795 326 39-16 40 13-40 17z" fill="#d49d42" stroke="#896729" stroke-width="1.2"/>
+                    <path d="m795 326 40 14v23l-40-14z" fill="#9a7138" stroke="#75572e" stroke-width="1.2"/>
+                    <path d="m835 340 39-17v23l-39 17z" fill="#725a38" stroke="#5b4931" stroke-width="1.2"/>
+                    <path d="m802 328 33 11m-35-5 33 11m-8-16v23m14-27v27m14-33v27" stroke="#edc16c" stroke-width="1.3" opacity=".8"/>
+                  </g>
+                  <g id="load-shape-concrete" style="display:none">
+                    <path d="m794 322 40-17 42 14-41 18z" fill="#c6c6b7" stroke="#707d79" stroke-width="1.5"/>
+                    <path d="m794 322 41 15v23l-41-15z" fill="#999f98" stroke="#626e6b" stroke-width="1.5"/>
+                    <path d="m835 337 41-18v22l-41 19z" fill="#727f7e" stroke="#4e5e60" stroke-width="1.5"/>
+                    <path d="m802 322 8 3m4-8 8 3m9-7 8 3m-29 17 8 3m4-8 8 3m-29 18 8 3" stroke="#e4dcc0" stroke-width="1.4"/>
+                  </g>
+                  <g id="load-shape-steel" style="display:none">
+                    <path d="m794 339 43-18 40 13-43 19z" fill="#9b7140" stroke="#654c31" stroke-width="1.2"/>
+                    <path d="m800 323 42-18 7 3-42 19zm10 5 42-18 7 3-42 19zm10 5 42-18 7 3-42 19z" fill="#71848a" stroke="#42565c" stroke-width="1.4"/>
+                    <path d="m800 323 7 3v7l-7-3zm10 5 7 3v7l-7-3zm10 5 7 3v7l-7-3z" fill="#bdc8c3" stroke="#53666a" stroke-width="1"/>
+                  </g>
+                  <g id="load-shape-equipment" style="display:none">
+                    <path d="m797 326 39-16 39 13-40 17z" fill="#d2a84f" stroke="#756038" stroke-width="1.3"/>
+                    <path d="m797 326 38 14v22l-38-14z" fill="#596b6b" stroke="#38494b" stroke-width="1.3"/>
+                    <path d="m835 340 40-17v21l-40 18z" fill="#374c54" stroke="#283b43" stroke-width="1.3"/>
+                    <path d="m805 330 25 9v12l-25-9z" fill="#809393"/>
+                    <path d="m808 332 18 7m-18-3 18 7m-18-3 18 7" stroke="#d6b65f" stroke-width="1.2"/>
+                    <circle cx="808" cy="363" r="4" fill="#29393d"/><circle cx="858" cy="360" r="4" fill="#29393d"/>
+                  </g>
+                  <path d="m790 367 45 16 44-19" fill="none" stroke="#e6d19f" stroke-width="2" stroke-dasharray="5 5" opacity=".65"/>
+                </g>
                 </g>
 
                 <!-- Site equipment and safety markers -->
@@ -766,8 +827,8 @@
           <section class="metrics" aria-label="Attempt summary">
             <article class="metric-card">
               <div>
-                <div class="metric-label">Elapsed time</div>
-                <div class="metric-value">00:00<span class="metric-unit">min</span></div>
+                <div class="metric-label">Timer (Stage 5)</div>
+                <div class="metric-value">--:--</div>
               </div>
               <span class="metric-icon" aria-hidden="true">
                 <svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="13" r="8" stroke="currentColor" stroke-width="1.7"/><path d="M12 9v4l3 2M9 2h6m-3 0v3" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>
@@ -775,8 +836,8 @@
             </article>
             <article class="metric-card score">
               <div>
-                <div class="metric-label">Loads delivered</div>
-                <div class="metric-value">0<span class="metric-unit">/ 4</span></div>
+                <div class="metric-label">Score (Stage 5)</div>
+                <div class="metric-value">--</div>
               </div>
               <span class="metric-icon" aria-hidden="true">
                 <svg viewBox="0 0 24 24" fill="none"><path d="m12 3 2.8 5.7 6.2.9-4.5 4.4 1.1 6.2-5.6-3-5.6 3 1.1-6.2L3 9.6l6.2-.9L12 3Z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg>
@@ -784,8 +845,8 @@
             </article>
             <article class="metric-card history-count">
               <div>
-                <div class="metric-label">Load history</div>
-                <div class="metric-value">0<span class="metric-unit">loads</span></div>
+                <div class="metric-label">History (Stage 5)</div>
+                <div class="metric-value">--</div>
               </div>
               <span class="metric-icon" aria-hidden="true">
                 <svg viewBox="0 0 24 24" fill="none"><path d="M4 5h16v15H4zM8 9h8M8 13h8M8 17h5M8 2v5m8-5v5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
@@ -879,12 +940,12 @@
                 <button class="hook-key" type="button" data-control="hook-up"><kbd>W</kbd> Raise</button>
                 <button class="hook-key" type="button" data-control="hook-down"><kbd>S</kbd> Lower</button>
               </div>
-              <div class="action-key">
-                <span>Pick up / deliver</span>
+              <button class="action-key" id="load-action" type="button">
+                <span id="load-action-label">Pick up selected load</span>
                 <span class="action-caption"><kbd>SPACE</kbd></span>
-              </div>
+              </button>
               <p class="stage-note"><strong>Movement:</strong> trolley 5 ft/s, jib 5 deg/s, hook 3 ft/s. The mast is the origin; angle 0 follows +x, and positive rotation is counterclockwise.</p>
-              <p class="stage-note">Hold a button or keyboard key to move. Opposing directions cancel. Pickup and delivery remain inactive until Stage 3.</p>
+              <p class="stage-note">Hold a button or keyboard key to move. Opposing directions cancel. Press Space or the action button to pick up or deliver.</p>
             </div>
           </section>
 
@@ -892,7 +953,7 @@
             <div class="panel-heading">
               <div>
                 <h2 id="load-target-title">Load &amp; target</h2>
-                <p>Current selection preview</p>
+                <p>Select a load and move it between the fixed points</p>
               </div>
               <span class="panel-icon" aria-hidden="true">
                 <svg viewBox="0 0 24 24" fill="none"><path d="m3 8 9-5 9 5-9 5-9-5Zm0 0v9l9 5 9-5V8m-9 5v9m-5-17 9 5" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg>
@@ -902,11 +963,11 @@
               <div>
                 <label class="field-label" for="load-choice">Selected load</label>
                 <div class="select-wrap">
-                  <select id="load-choice" disabled>
-                    <option>Small pallet</option>
-                    <option>Concrete bundle</option>
-                    <option>Steel beams</option>
-                    <option>Heavy equipment</option>
+                  <select id="load-choice">
+                    <option value="small-pallet" selected>Small pallet - 2,000 lb</option>
+                    <option value="concrete-bundle">Concrete bundle - 5,000 lb</option>
+                    <option value="steel-beams">Steel beams - 8,000 lb</option>
+                    <option value="heavy-equipment">Heavy equipment - 12,000 lb</option>
                   </select>
                 </div>
               </div>
@@ -915,22 +976,22 @@
                   <svg viewBox="0 0 24 24" fill="none"><path d="m3 8 9-5 9 5-9 5-9-5Zm0 0v9l9 5 9-5V8m-9 5v9m-5-17 9 5" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg>
                 </span>
                 <div>
-                  <div class="load-name">Small pallet</div>
-                  <div class="load-desc">Payload only</div>
+                  <div class="load-name" id="selected-load-name">Small pallet</div>
+                  <div class="load-status" id="selected-load-status" data-state="available">Available to pick up</div>
                 </div>
-                <div class="load-weight">2,000 lb</div>
+                <div class="load-weight" id="selected-load-weight">2,000 lb</div>
               </div>
               <div>
                 <div class="field-label">Current target</div>
                 <div class="target-card">
                   <div class="target-card-head">
-                    <span class="target-name"><i class="target-pin"></i>Building delivery</span>
-                    <span class="target-coords">Fixed site point</span>
+                    <span class="target-name"><i class="target-pin" id="current-target-pin"></i><span id="current-target-name">Pickup point</span></span>
+                    <span class="target-coords" id="current-target-kind">Pickup goal</span>
                   </div>
                   <div class="target-details">
-                    <div class="target-detail"><small>Radius</small><strong>75 ft</strong></div>
-                    <div class="target-detail"><small>Angle</small><strong>90 deg</strong></div>
-                    <div class="target-detail"><small>Height</small><strong>20 ft</strong></div>
+                    <div class="target-detail"><small>Radius</small><strong id="current-target-radius">50 ft</strong></div>
+                    <div class="target-detail"><small>Angle</small><strong id="current-target-angle">0 deg</strong></div>
+                    <div class="target-detail"><small>Height</small><strong id="current-target-height">0 ft</strong></div>
                   </div>
                 </div>
               </div>
@@ -944,6 +1005,9 @@
                   <div class="target-detail"><small>Angle</small><strong>0 deg</strong></div>
                   <div class="target-detail"><small>Height</small><strong>0 ft</strong></div>
                 </div>
+              </div>
+              <div class="interaction-message" id="interaction-message" data-state="info" role="status" aria-live="polite">
+                At the pickup point. Select a load, then press Space or the action button to pick it up.
               </div>
             </div>
           </section>
@@ -961,8 +1025,8 @@
             <div class="history-empty">
               <div>
                 <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M5 4h14v16H5zM8 8h8m-8 4h8m-8 4h5M8 2v4m8-4v4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
-                <strong>No deliveries yet</strong>
-                <span>Your successful placements will appear here during an attempt.</span>
+                <strong>History is not active yet</strong>
+                <span>Delivery history will be added in Stage 5.</span>
               </div>
             </div>
           </section>
@@ -974,7 +1038,7 @@
           <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 3 2.8 19h18.4L12 3Z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><path d="M12 9v4m0 3h.01" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
           <span><strong>Educational simulator only.</strong> This simplified simulator is not a real crane specification, engineering tool, operator-training replacement, or source for real-world lifting or construction-site safety decisions.</span>
         </div>
-        <div class="footer-note">Stage 2 movement preview - load interaction and safety calculations arrive in later stages.</div>
+        <div class="footer-note">Stage 3 interaction preview - capacity and safety calculations, timer, score, and history logic arrive in later stages.</div>
       </footer>
     </main>
   </div>
@@ -994,6 +1058,33 @@
       const craneSlew = document.getElementById("crane-slew");
       const trolleyCarriage = document.getElementById("trolley-carriage");
       const hoistAssembly = document.getElementById("hoist-assembly");
+      const attachedLoadVisual = document.getElementById("attached-load");
+      const loadChoice = document.getElementById("load-choice");
+      const selectedLoadName = document.getElementById("selected-load-name");
+      const selectedLoadWeight = document.getElementById("selected-load-weight");
+      const selectedLoadStatus = document.getElementById("selected-load-status");
+      const loadAction = document.getElementById("load-action");
+      const loadActionLabel = document.getElementById("load-action-label");
+      const interactionMessage = document.getElementById("interaction-message");
+      const pickupMarker = document.getElementById("scene-pickup");
+      const deliveryMarker = document.getElementById("scene-delivery");
+      const loadShapes = {
+        "small-pallet": document.getElementById("load-shape-small"),
+        "concrete-bundle": document.getElementById("load-shape-concrete"),
+        "steel-beams": document.getElementById("load-shape-steel"),
+        "heavy-equipment": document.getElementById("load-shape-equipment")
+      };
+      const loadCatalog = [
+        { id: "small-pallet", name: "Small pallet", weight: 2000 },
+        { id: "concrete-bundle", name: "Concrete bundle", weight: 5000 },
+        { id: "steel-beams", name: "Steel beams", weight: 8000 },
+        { id: "heavy-equipment", name: "Heavy equipment", weight: 12000 }
+      ];
+      const pickupPoint = { radius: 50, angle: 0, height: 0 };
+      const deliveryTarget = { radius: 75, angle: 90, height: 20 };
+      const loadStatuses = new Map(loadCatalog.map((load) => [load.id, "available"]));
+      let selectedLoadId = loadCatalog[0].id;
+      let attachedLoadId = null;
       const keyControls = {
         ArrowLeft: "jib-left",
         ArrowRight: "jib-right",
@@ -1046,6 +1137,162 @@
         return (angle % 360 + 360) % 360;
       }
 
+      function getLoad(loadId) {
+        return loadCatalog.find((load) => load.id === loadId) || null;
+      }
+
+      function formatWeight(weight) {
+        return weight.toLocaleString("en-US") + " lb";
+      }
+
+      function formatDistance(distance) {
+        return (Math.round(distance * 100) / 100).toFixed(2);
+      }
+
+      function toCartesian(point) {
+        const radians = point.angle * Math.PI / 180;
+        return {
+          x: point.radius * Math.cos(radians),
+          y: point.radius * Math.sin(radians),
+          z: point.height
+        };
+      }
+
+      function currentCranePosition() {
+        return {
+          radius: state.radius,
+          angle: state.jibAngle,
+          height: state.hookHeight
+        };
+      }
+
+      function distance3d(position, target) {
+        const current = toCartesian(position);
+        const destination = toCartesian(target);
+        return Math.hypot(
+          current.x - destination.x,
+          current.y - destination.y,
+          current.z - destination.z
+        );
+      }
+
+      function showInteractionMessage(message, type) {
+        interactionMessage.textContent = message;
+        interactionMessage.dataset.state = type;
+      }
+
+      function renderTarget() {
+        const isDelivering = attachedLoadId !== null;
+        const target = isDelivering ? deliveryTarget : pickupPoint;
+        const targetName = isDelivering ? "Building delivery" : "Pickup point";
+
+        document.getElementById("current-target-name").textContent = targetName;
+        document.getElementById("current-target-kind").textContent = isDelivering ? "Delivery goal" : "Pickup goal";
+        document.getElementById("current-target-radius").textContent = target.radius + " ft";
+        document.getElementById("current-target-angle").textContent = target.angle + " deg";
+        document.getElementById("current-target-height").textContent = target.height + " ft";
+        document.getElementById("current-target-pin").style.background = isDelivering ? "#ea8d67" : "#d99327";
+        document.getElementById("current-target-pin").style.boxShadow = isDelivering
+          ? "0 0 0 4px rgba(234, 141, 103, .12)"
+          : "0 0 0 4px rgba(217, 147, 39, .14)";
+        pickupMarker.classList.toggle("is-active", !isDelivering);
+        deliveryMarker.classList.toggle("is-active", isDelivering);
+      }
+
+      function renderLoadState() {
+        const selectedLoad = getLoad(selectedLoadId);
+        const displayedLoad = attachedLoadId ? getLoad(attachedLoadId) : selectedLoad;
+
+        loadChoice.disabled = attachedLoadId !== null || selectedLoad === null;
+        Array.from(loadChoice.options).forEach((option) => {
+          const load = getLoad(option.value);
+          const status = loadStatuses.get(option.value);
+          option.disabled = status === "delivered";
+          option.textContent = load.name + " - " + formatWeight(load.weight) + (status === "delivered" ? " - Delivered" : "");
+        });
+        if (selectedLoadId) loadChoice.value = selectedLoadId;
+        else loadChoice.selectedIndex = -1;
+
+        selectedLoadName.textContent = displayedLoad ? displayedLoad.name : "No loads available";
+        selectedLoadWeight.textContent = displayedLoad ? formatWeight(displayedLoad.weight) : "--";
+        if (attachedLoadId) {
+          selectedLoadStatus.textContent = "Attached to hook";
+          selectedLoadStatus.dataset.state = "attached";
+          loadActionLabel.textContent = "Deliver at building target";
+          loadAction.disabled = false;
+        } else if (selectedLoad) {
+          selectedLoadStatus.textContent = "Available to pick up";
+          selectedLoadStatus.dataset.state = "available";
+          loadActionLabel.textContent = "Pick up selected load";
+          loadAction.disabled = false;
+        } else {
+          selectedLoadStatus.textContent = "All loads delivered";
+          selectedLoadStatus.dataset.state = "delivered";
+          loadActionLabel.textContent = "No loads available";
+          loadAction.disabled = true;
+        }
+
+        attachedLoadVisual.style.display = attachedLoadId ? "" : "none";
+        Object.entries(loadShapes).forEach(([loadId, shape]) => {
+          shape.style.display = attachedLoadId === loadId ? "" : "none";
+        });
+        renderTarget();
+      }
+
+      function handleLoadAction() {
+        if (attachedLoadId) {
+          const load = getLoad(attachedLoadId);
+          const distance = distance3d(currentCranePosition(), deliveryTarget);
+          if (!Number.isFinite(distance)) {
+            showInteractionMessage("Delivery rejected: the hook position could not be verified.", "rejected");
+            return;
+          }
+          if (distance > 5) {
+            showInteractionMessage(
+              "Delivery rejected: the hook is " + formatDistance(distance) + " ft from the building target. Move within 5 ft.",
+              "rejected"
+            );
+            return;
+          }
+
+          loadStatuses.set(load.id, "delivered");
+          attachedLoadId = null;
+          selectedLoadId = (loadCatalog.find((item) => loadStatuses.get(item.id) === "available") || {}).id || null;
+          renderLoadState();
+          const nextLoad = getLoad(selectedLoadId);
+          showInteractionMessage(
+            "Delivered " + load.name + " at the building target." +
+              (nextLoad ? " " + nextLoad.name + " is selected; move to the pickup point." : " All four loads are delivered."),
+            "success"
+          );
+          return;
+        }
+
+        const load = getLoad(selectedLoadId);
+        if (!load || loadStatuses.get(load.id) !== "available") {
+          showInteractionMessage("Pickup rejected: select an available load first.", "rejected");
+          return;
+        }
+
+        const distance = distance3d(currentCranePosition(), pickupPoint);
+        if (!Number.isFinite(distance)) {
+          showInteractionMessage("Pickup rejected: the hook position could not be verified.", "rejected");
+          return;
+        }
+        if (distance > 5) {
+          showInteractionMessage(
+            "Pickup rejected: the hook is " + formatDistance(distance) + " ft from the pickup point. Move within 5 ft.",
+            "rejected"
+          );
+          return;
+        }
+
+        attachedLoadId = load.id;
+        loadStatuses.set(load.id, "attached");
+        renderLoadState();
+        showInteractionMessage("Picked up " + load.name + " (" + formatWeight(load.weight) + "). Move to the building target.", "success");
+      }
+
       function animate(timestamp) {
         if (previousFrame !== null) {
           const elapsedSeconds = (timestamp - previousFrame) / 1000;
@@ -1065,6 +1312,14 @@
       }
 
       window.addEventListener("keydown", (event) => {
+        if (event.code === "Space") {
+          const targetIsInteractive = event.target instanceof Element && event.target.closest("button, select, input, textarea");
+          if (!event.repeat && !targetIsInteractive) {
+            event.preventDefault();
+            handleLoadAction();
+          }
+          return;
+        }
         const control = keyControls[event.code];
         if (!control) return;
         event.preventDefault();
@@ -1095,6 +1350,15 @@
         button.addEventListener("lostpointercapture", releasePointer);
       });
 
+      loadChoice.addEventListener("change", () => {
+        const load = getLoad(loadChoice.value);
+        if (!load || loadStatuses.get(load.id) !== "available" || attachedLoadId) return;
+        selectedLoadId = load.id;
+        renderLoadState();
+        showInteractionMessage(load.name + " selected. Move to the pickup point and press Space or the action button.", "info");
+      });
+      loadAction.addEventListener("click", handleLoadAction);
+
       function releaseAllInputs() {
         keyboardInputs.clear();
         pointerInputs.clear();
@@ -1108,6 +1372,7 @@
       });
 
       renderPosition();
+      renderLoadState();
       requestAnimationFrame(animate);
     })();
   </script>
