@@ -35,3 +35,7 @@ The six-stage plan was approved:
 ## Development approach
 
 The specification was reviewed and refined through questions and feedback before implementation. Suggestions were evaluated before being accepted. The application will be built incrementally, tested, and validated against hand calculations.
+
+## Prompt 5 - Build Stage 1 visual mockup
+
+Read spec.md and AGENTS.md carefully. Build only Stage 1, the visual mockup and page layout, as a single-file web application in index.html. Include an attractive isometric tower-crane scene and construction-site background, crane controls panel, load selection and target information, illustrative load chart, timer, score, load history, educational disclaimer, and responsive desktop/mobile layout. This stage is visual only: do not implement crane movement, calculations, pickup or delivery behavior, scoring logic, or safety calculations. Keep CSS and any JavaScript inside index.html. Update prompts.md with this request. Do not modify spec.md or AGENTS.md, do not create or modify any other app files, and do not start implementation beyond Stage 1. When complete, summarize what was created and how to test the visual mockup.
