@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#111a24">
   <meta name="description" content="An educational tower crane simulator with illustrative chart-based capacity warnings.">
-  <title>Crane Operator - Stage 4 Capacity and Safety</title>
+  <title>Crane Operator - Stage 5 Simulation Lifecycle</title>
   <style>
     :root {
       color-scheme: dark;
@@ -142,6 +142,18 @@
       font-weight: 650;
     }
     .state-pill .state-dot { background: var(--green); box-shadow: 0 0 0 4px rgba(96, 212, 160, .11); }
+    .state-pill.is-paused {
+      border-color: rgba(255, 200, 87, .28);
+      color: #ffdc8c;
+      background: rgba(255, 200, 87, .07);
+    }
+    .state-pill.is-paused .state-dot { background: var(--yellow); box-shadow: 0 0 0 4px rgba(255, 200, 87, .12); }
+    .state-pill.is-completed {
+      border-color: rgba(96, 212, 160, .28);
+      color: #a9e5c4;
+      background: rgba(96, 212, 160, .07);
+    }
+    .state-pill.is-completed .state-dot { background: var(--green); }
     .state-pill.is-overloaded {
       border-color: rgba(255, 116, 104, .35);
       color: #ffaaa1;
@@ -261,6 +273,7 @@
     .metric-icon svg { width: 17px; height: 17px; }
     .metric-card.score .metric-icon { color: var(--green); background: rgba(96, 212, 160, .09); }
     .metric-card.history-count .metric-icon { color: #9dc9d3; background: rgba(113, 184, 199, .1); }
+    .metric-card.history-count .metric-value { font-size: 23px; }
 
     .panel-heading {
       display: flex;
@@ -285,6 +298,30 @@
     .panel-icon svg { width: 15px; height: 15px; }
 
     .controls-body { padding: 0 18px 17px; }
+    .simulation-controls {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 7px;
+      margin: 0 0 16px;
+    }
+    .simulation-button {
+      min-height: 34px;
+      padding: 0 10px;
+      border: 1px solid rgba(220, 232, 235, .12);
+      border-radius: 8px;
+      color: #d9e1e2;
+      background: rgba(255, 255, 255, .04);
+      font-size: 10px;
+      font-weight: 720;
+      cursor: pointer;
+    }
+    .simulation-button.primary {
+      border-color: rgba(255, 200, 87, .3);
+      color: #ffe1a0;
+      background: rgba(255, 200, 87, .1);
+    }
+    .simulation-button:disabled { opacity: .42; cursor: default; }
+    .simulation-button:focus-visible { outline: 2px solid var(--yellow); outline-offset: 2px; }
     .control-group-label { margin: 0 0 8px; color: #82939a; font-size: 9px; font-weight: 760; letter-spacing: .11em; text-transform: uppercase; }
     .direction-pad {
       display: grid;
@@ -612,6 +649,43 @@
     .history-empty svg { width: 28px; height: 28px; margin-bottom: 8px; color: #667780; }
     .history-empty strong { display: block; margin-bottom: 4px; color: #b9c5c8; font-size: 10px; font-weight: 680; }
     .history-empty span { display: block; max-width: 190px; font-size: 9px; line-height: 1.5; }
+    .history-empty[hidden] { display: none; }
+    .load-history-list {
+      display: grid;
+      gap: 8px;
+      margin: 0;
+      padding: 0 17px 17px;
+      list-style: none;
+    }
+    .load-history-entry {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 10px;
+      padding: 10px 11px;
+      border: 1px solid rgba(96, 212, 160, .14);
+      border-radius: 9px;
+      background: rgba(96, 212, 160, .045);
+    }
+    .load-history-entry strong {
+      display: block;
+      color: #d8e6e0;
+      font-size: 10px;
+      font-weight: 700;
+    }
+    .load-history-entry span {
+      display: block;
+      margin-top: 4px;
+      color: #8fa59a;
+      font-size: 9px;
+      line-height: 1.4;
+    }
+    .load-history-weight {
+      flex: 0 0 auto;
+      color: #a9e5c4 !important;
+      font-variant-numeric: tabular-nums;
+      font-weight: 700;
+    }
 
     .disclaimer {
       display: flex;
@@ -710,8 +784,8 @@
         </div>
       </div>
       <div class="topbar-right">
-        <span class="stage-label">Stage 04 / Capacity and safety</span>
-        <span class="preview-pill"><i class="preview-dot"></i>Capacity monitoring enabled</span>
+        <span class="stage-label">Stage 05 / Simulation lifecycle</span>
+        <span class="preview-pill"><i class="preview-dot"></i>Attempt tracking enabled</span>
       </div>
     </header>
 
@@ -933,8 +1007,8 @@
           <section class="metrics" aria-label="Attempt summary">
             <article class="metric-card">
               <div>
-                <div class="metric-label">Timer (Stage 5)</div>
-                <div class="metric-value">--:--</div>
+                <div class="metric-label">Elapsed time</div>
+                <div class="metric-value" id="timer-readout">00:00</div>
               </div>
               <span class="metric-icon" aria-hidden="true">
                 <svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="13" r="8" stroke="currentColor" stroke-width="1.7"/><path d="M12 9v4l3 2M9 2h6m-3 0v3" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>
@@ -942,8 +1016,8 @@
             </article>
             <article class="metric-card score">
               <div>
-                <div class="metric-label">Score (Stage 5)</div>
-                <div class="metric-value">--</div>
+                <div class="metric-label">Score</div>
+                <div class="metric-value" id="score-readout">0</div>
               </div>
               <span class="metric-icon" aria-hidden="true">
                 <svg viewBox="0 0 24 24" fill="none"><path d="m12 3 2.8 5.7 6.2.9-4.5 4.4 1.1 6.2-5.6-3-5.6 3 1.1-6.2L3 9.6l6.2-.9L12 3Z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg>
@@ -951,8 +1025,8 @@
             </article>
             <article class="metric-card history-count">
               <div>
-                <div class="metric-label">History (Stage 5)</div>
-                <div class="metric-value">--</div>
+                <div class="metric-label">Delivered loads</div>
+                <div class="metric-value" id="history-count-readout">0</div>
               </div>
               <span class="metric-icon" aria-hidden="true">
                 <svg viewBox="0 0 24 24" fill="none"><path d="M4 5h16v15H4zM8 9h8M8 13h8M8 17h5M8 2v5m8-5v5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
@@ -1037,6 +1111,13 @@
               </span>
             </div>
             <div class="controls-body">
+              <div class="simulation-controls" aria-label="Simulation controls">
+                <button class="simulation-button primary" id="simulation-start" type="button">Start</button>
+                <button class="simulation-button" id="simulation-pause" type="button" hidden>Pause</button>
+                <button class="simulation-button" id="simulation-resume" type="button" hidden>Resume</button>
+                <button class="simulation-button" id="simulation-reset" type="button">Reset</button>
+                <button class="simulation-button primary" id="simulation-retry" type="button" hidden disabled>Retry</button>
+              </div>
               <p class="control-group-label">Swing jib / move trolley</p>
               <div class="direction-pad" aria-label="Hold a direction to move the crane">
                 <span class="key-button empty" aria-hidden="true"></span>
@@ -1060,7 +1141,7 @@
                 <span class="action-caption"><kbd>SPACE</kbd></span>
               </button>
               <p class="stage-note"><strong>Movement:</strong> trolley 5 ft/s, jib 5 deg/s, hook 3 ft/s. The mast is the origin; angle 0 follows +x, and positive rotation is counterclockwise.</p>
-              <p class="stage-note">Hold a button or keyboard key to move. Opposing directions cancel. Press Space or the action button to pick up or deliver.</p>
+              <p class="stage-note">Press Start before operating. Hold a button or key to move; opposing directions cancel. Press Space or the action button to pick up or deliver while active.</p>
             </div>
           </section>
 
@@ -1136,7 +1217,7 @@
                 </div>
               </div>
               <div class="interaction-message" id="interaction-message" data-state="info" role="status" aria-live="polite">
-                At the pickup point. Select a load, then press Space or the action button to pick it up.
+                Press Start to begin; then select a load and move to the pickup point.
               </div>
             </div>
           </section>
@@ -1151,13 +1232,14 @@
                 <svg viewBox="0 0 24 24" fill="none"><path d="M4 5h16v15H4zM8 9h8M8 13h8M8 17h5M8 2v5m8-5v5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
               </span>
             </div>
-            <div class="history-empty">
+            <div class="history-empty" id="history-empty">
               <div>
                 <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M5 4h14v16H5zM8 8h8m-8 4h8m-8 4h5M8 2v4m8-4v4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
-                <strong>History is not active yet</strong>
-                <span>Delivery history will be added in Stage 5.</span>
+                <strong>No deliveries yet</strong>
+                <span>Successful deliveries will appear here for this attempt.</span>
               </div>
             </div>
+            <ol class="load-history-list" id="load-history-list" aria-label="Successful load deliveries" aria-live="polite"></ol>
           </section>
         </aside>
       </div>
@@ -1167,7 +1249,7 @@
           <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 3 2.8 19h18.4L12 3Z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><path d="M12 9v4m0 3h.01" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
           <span><strong>Educational simulator only.</strong> This simplified simulator is not a real crane specification, engineering tool, operator-training replacement, or source for real-world lifting or construction-site safety decisions.</span>
         </div>
-        <div class="footer-note">Stage 4 capacity and overload preview - timer, score, load history, and simulation lifecycle arrive in Stage 5.</div>
+        <div class="footer-note">Stage 5 simulation lifecycle is active; capacity and risk remain chart-based educational indicators only.</div>
       </footer>
     </main>
   </div>
@@ -1195,6 +1277,11 @@
       const selectedLoadStatus = document.getElementById("selected-load-status");
       const loadAction = document.getElementById("load-action");
       const loadActionLabel = document.getElementById("load-action-label");
+      const startButton = document.getElementById("simulation-start");
+      const pauseButton = document.getElementById("simulation-pause");
+      const resumeButton = document.getElementById("simulation-resume");
+      const resetButton = document.getElementById("simulation-reset");
+      const retryButton = document.getElementById("simulation-retry");
       const interactionMessage = document.getElementById("interaction-message");
       const pickupMarker = document.getElementById("scene-pickup");
       const deliveryMarker = document.getElementById("scene-delivery");
@@ -1207,6 +1294,12 @@
       const capacityIndicatorDetail = document.getElementById("capacity-indicator-detail");
       const simulationStatus = document.getElementById("simulation-status");
       const simulationStatusText = document.getElementById("simulation-status-text");
+      const timerReadout = document.getElementById("timer-readout");
+      const scoreReadout = document.getElementById("score-readout");
+      const historyCountReadout = document.getElementById("history-count-readout");
+      const historyEmpty = document.getElementById("history-empty");
+      const loadHistoryList = document.getElementById("load-history-list");
+      const craneStructure = document.getElementById("crane-structure");
       const actualRadiusMarker = document.getElementById("actual-radius-marker");
       const actualRadiusAxisDot = document.getElementById("actual-radius-axis-dot");
       const chartRadiusMarker = document.getElementById("chart-radius-marker");
@@ -1238,7 +1331,11 @@
       const loadStatuses = new Map(loadCatalog.map((load) => [load.id, "available"]));
       let selectedLoadId = loadCatalog[0].id;
       let attachedLoadId = null;
-      let overloaded = false;
+      let simulationState = "ready";
+      let tipOverAnimationFinished = true;
+      let elapsedMilliseconds = 0;
+      let score = 0;
+      const loadHistory = [];
       const keyControls = {
         ArrowLeft: "jib-left",
         ArrowRight: "jib-right",
@@ -1307,6 +1404,68 @@
         return value.toFixed(2) + "%";
       }
 
+      function renderTimer() {
+        const totalSeconds = Math.floor(elapsedMilliseconds / 1000);
+        const minutes = Math.floor(totalSeconds / 60);
+        const seconds = totalSeconds % 60;
+        timerReadout.textContent =
+          String(minutes).padStart(2, "0") + ":" + String(seconds).padStart(2, "0");
+      }
+
+      function renderLoadHistory() {
+        historyCountReadout.textContent = String(loadHistory.length);
+        historyEmpty.hidden = loadHistory.length > 0;
+        loadHistoryList.textContent = "";
+        loadHistory.forEach((entry) => {
+          const item = document.createElement("li");
+          const details = document.createElement("div");
+          const title = document.createElement("strong");
+          const location = document.createElement("span");
+          const weight = document.createElement("span");
+
+          item.className = "load-history-entry";
+          title.textContent = entry.name;
+          location.textContent =
+            "Building delivery · " + deliveryTarget.radius + " ft radius · " +
+            deliveryTarget.angle + "° · " + deliveryTarget.height + " ft height";
+          weight.className = "load-history-weight";
+          weight.textContent = formatWeight(entry.weight);
+          details.append(title, location);
+          item.append(details, weight);
+          loadHistoryList.append(item);
+        });
+      }
+
+      function renderSimulationState() {
+        const isReady = simulationState === "ready";
+        const isActive = simulationState === "active";
+        const isPaused = simulationState === "paused";
+        const isCompleted = simulationState === "completed";
+        const isOverloaded = simulationState === "overloaded";
+        const labels = {
+          ready: "Ready",
+          active: "Active",
+          paused: "Paused",
+          completed: "Completed",
+          overloaded: "Overloaded"
+        };
+
+        simulationStatusText.textContent = labels[simulationState];
+        simulationStatus.classList.toggle("is-paused", isPaused);
+        simulationStatus.classList.toggle("is-completed", isCompleted);
+        simulationStatus.classList.toggle("is-overloaded", isOverloaded);
+        startButton.hidden = !isReady;
+        pauseButton.hidden = !isActive;
+        resumeButton.hidden = !isPaused;
+        retryButton.hidden = !isOverloaded;
+        retryButton.disabled = isOverloaded && !tipOverAnimationFinished;
+        resetButton.disabled = isOverloaded && !tipOverAnimationFinished;
+        controls.forEach((button) => {
+          button.disabled = !isActive;
+        });
+        renderLoadState();
+      }
+
       function capacityRowForRadius(radius) {
         return capacityChart.find((row) => radius <= row.radius) || capacityChart[capacityChart.length - 1];
       }
@@ -1373,22 +1532,17 @@
           capacityIndicatorDetail.textContent = "Utilization is below 90% of illustrative chart capacity.";
         }
 
-        if (utilization > 100 && !overloaded) {
+        if (utilization > 100 && simulationState !== "overloaded") {
           triggerOverload(attachedLoad, chartRow);
         }
       }
 
       function triggerOverload(load, chartRow) {
-        overloaded = true;
+        simulationState = "overloaded";
+        tipOverAnimationFinished = false;
         releaseAllInputs();
-        controls.forEach((button) => {
-          button.disabled = true;
-        });
-        loadChoice.disabled = true;
-        loadAction.disabled = true;
         siteFrame.classList.add("is-overloaded");
-        simulationStatus.classList.add("is-overloaded");
-        simulationStatusText.textContent = "Overloaded";
+        renderSimulationState();
         showInteractionMessage(
           "Overload: " + formatWeight(load.weight) + " exceeds the " + formatWeight(chartRow.capacity) +
             " illustrative capacity at " + chartRow.radius + " ft. Crane movement has stopped.",
@@ -1449,8 +1603,9 @@
       function renderLoadState() {
         const selectedLoad = getLoad(selectedLoadId);
         const displayedLoad = attachedLoadId ? getLoad(attachedLoadId) : selectedLoad;
+        const canSelectLoad = simulationState === "ready" || simulationState === "active";
 
-        loadChoice.disabled = overloaded || attachedLoadId !== null || selectedLoad === null;
+        loadChoice.disabled = !canSelectLoad || attachedLoadId !== null || selectedLoad === null;
         Array.from(loadChoice.options).forEach((option) => {
           const load = getLoad(option.value);
           const status = loadStatuses.get(option.value);
@@ -1466,12 +1621,12 @@
           selectedLoadStatus.textContent = "Attached to hook";
           selectedLoadStatus.dataset.state = "attached";
           loadActionLabel.textContent = "Deliver at building target";
-          loadAction.disabled = overloaded;
+          loadAction.disabled = simulationState !== "active";
         } else if (selectedLoad) {
           selectedLoadStatus.textContent = "Available to pick up";
           selectedLoadStatus.dataset.state = "available";
           loadActionLabel.textContent = "Pick up selected load";
-          loadAction.disabled = overloaded;
+          loadAction.disabled = simulationState !== "active";
         } else {
           selectedLoadStatus.textContent = "All loads delivered";
           selectedLoadStatus.dataset.state = "delivered";
@@ -1488,7 +1643,15 @@
       }
 
       function handleLoadAction() {
-        if (overloaded) return;
+        if (simulationState !== "active") {
+          const prompt = simulationState === "paused"
+            ? "Resume the simulation before interacting with loads."
+            : simulationState === "ready"
+              ? "Press Start before interacting with loads."
+              : "Load interactions are unavailable in the " + simulationState + " state.";
+          showInteractionMessage(prompt, "info");
+          return;
+        }
         if (attachedLoadId) {
           const load = getLoad(attachedLoadId);
           const distance = distance3d(currentCranePosition(), deliveryTarget);
@@ -1507,7 +1670,16 @@
           loadStatuses.set(load.id, "delivered");
           attachedLoadId = null;
           selectedLoadId = (loadCatalog.find((item) => loadStatuses.get(item.id) === "available") || {}).id || null;
-          renderLoadState();
+          loadHistory.push({ name: load.name, weight: load.weight });
+          score += 1;
+          scoreReadout.textContent = String(score);
+          renderLoadHistory();
+          const scenarioCompleted = loadCatalog.every((item) => loadStatuses.get(item.id) === "delivered");
+          if (scenarioCompleted) {
+            simulationState = "completed";
+            releaseAllInputs();
+          }
+          renderSimulationState();
           const nextLoad = getLoad(selectedLoadId);
           showInteractionMessage(
             "Delivered " + load.name + " at the building target." +
@@ -1542,27 +1714,84 @@
         showInteractionMessage("Picked up " + load.name + " (" + formatWeight(load.weight) + "). Move to the building target.", "success");
       }
 
-      function animate(timestamp) {
-        if (overloaded) return;
-        if (previousFrame !== null) {
-          const elapsedSeconds = (timestamp - previousFrame) / 1000;
-          const jibDirection = Number(isPressed("jib-left")) - Number(isPressed("jib-right"));
-          const trolleyDirection = Number(isPressed("trolley-out")) - Number(isPressed("trolley-in"));
-          const hookDirection = Number(isPressed("hook-up")) - Number(isPressed("hook-down"));
+      function startSimulation() {
+        if (simulationState !== "ready") return;
+        releaseAllInputs();
+        simulationState = "active";
+        renderSimulationState();
+        showInteractionMessage("Simulation active. Move to the pickup point and select a load.", "info");
+      }
 
-          if (trolleyDirection) {
-            const nextRadius = Math.max(50, Math.min(150, state.radius + trolleyDirection * 5 * elapsedSeconds));
-            if (nextRadius !== state.radius) {
-              state.radius = nextRadius;
-              renderPosition();
-              renderCapacity();
-              if (overloaded) return;
+      function pauseSimulation() {
+        if (simulationState !== "active") return;
+        simulationState = "paused";
+        releaseAllInputs();
+        renderSimulationState();
+        showInteractionMessage("Simulation paused. Resume when you are ready to continue.", "info");
+      }
+
+      function resumeSimulation() {
+        if (simulationState !== "paused") return;
+        releaseAllInputs();
+        simulationState = "active";
+        renderSimulationState();
+        showInteractionMessage("Simulation resumed.", "info");
+      }
+
+      function resetAttempt(message) {
+        if (simulationState === "overloaded" && !tipOverAnimationFinished) return;
+        releaseAllInputs();
+        simulationState = "ready";
+        tipOverAnimationFinished = true;
+        siteFrame.classList.remove("is-overloaded");
+        state.radius = 50;
+        state.jibAngle = 0;
+        state.hookHeight = 0;
+        selectedLoadId = loadCatalog[0].id;
+        attachedLoadId = null;
+        loadCatalog.forEach((load) => {
+          loadStatuses.set(load.id, "available");
+        });
+        elapsedMilliseconds = 0;
+        score = 0;
+        loadHistory.length = 0;
+        renderPosition();
+        renderTimer();
+        scoreReadout.textContent = "0";
+        renderLoadHistory();
+        renderSimulationState();
+        showInteractionMessage(message || "Simulation reset. Press Start to begin a new attempt.", "info");
+      }
+
+      function retrySimulation() {
+        if (simulationState !== "overloaded" || !tipOverAnimationFinished) return;
+        resetAttempt("Retry ready. Press Start to begin a completely new attempt.");
+      }
+
+      function animate(timestamp) {
+        if (previousFrame !== null) {
+          const frameMilliseconds = Math.max(0, timestamp - previousFrame);
+          if (simulationState === "active") {
+            elapsedMilliseconds += frameMilliseconds;
+            renderTimer();
+            const elapsedSeconds = frameMilliseconds / 1000;
+            const jibDirection = Number(isPressed("jib-left")) - Number(isPressed("jib-right"));
+            const trolleyDirection = Number(isPressed("trolley-out")) - Number(isPressed("trolley-in"));
+            const hookDirection = Number(isPressed("hook-up")) - Number(isPressed("hook-down"));
+
+            if (trolleyDirection) {
+              const nextRadius = Math.max(50, Math.min(150, state.radius + trolleyDirection * 5 * elapsedSeconds));
+              if (nextRadius !== state.radius) {
+                state.radius = nextRadius;
+                renderPosition();
+                renderCapacity();
+              }
             }
-          }
-          if (jibDirection || hookDirection) {
-            state.jibAngle = normalizeAngle(state.jibAngle + jibDirection * 5 * elapsedSeconds);
-            state.hookHeight = Math.max(0, Math.min(100, state.hookHeight + hookDirection * 3 * elapsedSeconds));
-            renderPosition();
+            if (simulationState === "active" && (jibDirection || hookDirection)) {
+              state.jibAngle = normalizeAngle(state.jibAngle + jibDirection * 5 * elapsedSeconds);
+              state.hookHeight = Math.max(0, Math.min(100, state.hookHeight + hookDirection * 3 * elapsedSeconds));
+              renderPosition();
+            }
           }
         }
         previousFrame = timestamp;
@@ -1579,7 +1808,7 @@
           return;
         }
         const control = keyControls[event.code];
-        if (!control || overloaded) return;
+        if (!control || simulationState !== "active") return;
         event.preventDefault();
         keyboardInputs.add(control);
         refreshControlStyles();
@@ -1594,7 +1823,7 @@
 
       controls.forEach((button) => {
         button.addEventListener("pointerdown", (event) => {
-          if (overloaded) return;
+          if (simulationState !== "active") return;
           event.preventDefault();
           pointerInputs.set(event.pointerId, button.dataset.control);
           button.setPointerCapture(event.pointerId);
@@ -1611,12 +1840,26 @@
 
       loadChoice.addEventListener("change", () => {
         const load = getLoad(loadChoice.value);
-        if (!load || loadStatuses.get(load.id) !== "available" || attachedLoadId) return;
+        const canSelectLoad = simulationState === "ready" || simulationState === "active";
+        if (!canSelectLoad || !load || loadStatuses.get(load.id) !== "available" || attachedLoadId) return;
         selectedLoadId = load.id;
         renderLoadState();
         showInteractionMessage(load.name + " selected. Move to the pickup point and press Space or the action button.", "info");
       });
       loadAction.addEventListener("click", handleLoadAction);
+      startButton.addEventListener("click", startSimulation);
+      pauseButton.addEventListener("click", pauseSimulation);
+      resumeButton.addEventListener("click", resumeSimulation);
+      resetButton.addEventListener("click", () => {
+        resetAttempt();
+      });
+      retryButton.addEventListener("click", retrySimulation);
+      craneStructure.addEventListener("animationend", (event) => {
+        if (event.animationName !== "crane-tip-over" || simulationState !== "overloaded") return;
+        tipOverAnimationFinished = true;
+        renderSimulationState();
+        showInteractionMessage("Tip-over animation complete. Retry is available.", "rejected");
+      });
 
       function releaseAllInputs() {
         keyboardInputs.clear();
@@ -1631,7 +1874,10 @@
       });
 
       renderPosition();
-      renderLoadState();
+      renderTimer();
+      scoreReadout.textContent = "0";
+      renderLoadHistory();
+      renderSimulationState();
       requestAnimationFrame(animate);
     })();
   </script>
