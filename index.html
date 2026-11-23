@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#111a24">
   <meta name="description" content="A visual mockup for Crane Operator, an educational tower crane simulator.">
-  <title>Crane Operator - Stage 1 Mockup</title>
+  <title>Crane Operator - Stage 2 Movement Preview</title>
   <style>
     :root {
       color-scheme: dark;
@@ -298,6 +298,18 @@
       box-shadow: inset 0 1px rgba(255,255,255,.04), 0 3px 7px rgba(0,0,0,.13);
       font-size: 14px;
       font-weight: 700;
+      touch-action: none;
+      user-select: none;
+    }
+    .key-button.is-pressed, .hook-key.is-pressed {
+      border-color: rgba(255, 200, 87, .55);
+      color: #ffe2a1;
+      background: rgba(255, 200, 87, .15);
+      box-shadow: inset 0 1px rgba(255,255,255,.06), 0 0 0 2px rgba(255, 200, 87, .08);
+    }
+    .key-button:focus-visible, .hook-key:focus-visible {
+      outline: 2px solid var(--yellow);
+      outline-offset: 2px;
     }
     .key-button.empty { visibility: hidden; }
     .key-button span { display: block; font-size: 8px; font-weight: 700; line-height: 1; }
@@ -333,6 +345,8 @@
       background: rgba(255,255,255,.035);
       font-size: 10px;
       font-weight: 650;
+      touch-action: none;
+      user-select: none;
     }
     .hook-key kbd { min-width: 21px; }
     .action-key {
@@ -554,8 +568,8 @@
         </div>
       </div>
       <div class="topbar-right">
-        <span class="stage-label">Stage 01 / Visual mockup</span>
-        <span class="preview-pill"><i class="preview-dot"></i>Visual preview</span>
+        <span class="stage-label">Stage 02 / Crane movement</span>
+        <span class="preview-pill"><i class="preview-dot"></i>Movement enabled</span>
       </div>
     </header>
 
@@ -578,17 +592,17 @@
                 </svg>
                 SITE OVERVIEW
               </div>
-              <div class="scene-readout">
-                <span class="scene-chip">RADIUS <strong>50 ft</strong></span>
-                <span class="scene-chip">JIB ANGLE <strong>0 deg</strong></span>
-                <span class="scene-chip">HOOK <strong>0 ft</strong></span>
+              <div class="scene-readout" aria-label="Current crane position">
+                <span class="scene-chip">RADIUS <strong id="radius-readout">50 ft</strong></span>
+                <span class="scene-chip">JIB ANGLE <strong id="angle-readout">0 deg</strong></span>
+                <span class="scene-chip">HOOK <strong id="height-readout">0 ft</strong></span>
               </div>
             </div>
 
             <div class="site-frame">
               <span class="site-chip pickup"><i class="chip-dot"></i>Pickup point</span>
               <span class="site-chip delivery"><i class="chip-dot" style="background:#e88762"></i>Delivery target</span>
-              <svg viewBox="0 0 1000 520" role="img" aria-labelledby="site-title site-desc">
+              <svg viewBox="0 -180 1000 700" role="img" aria-labelledby="site-title site-desc">
                 <title id="site-title">Isometric construction site with a tower crane</title>
                 <desc id="site-desc">A tower crane stands beside a partially built concrete structure on a marked construction site. Pickup and delivery locations are labeled.</desc>
                 <defs>
@@ -623,7 +637,7 @@
                     <feGaussianBlur stdDeviation="3"/>
                   </filter>
                 </defs>
-                <rect width="1000" height="520" fill="url(#sky)"/>
+                <rect x="0" y="-180" width="1000" height="700" fill="url(#sky)"/>
                 <circle cx="839" cy="82" r="36" fill="#f3d698" opacity=".68"/>
                 <path d="M0 245 92 197l68 35 92-58 94 63 81-39 97 59v57H0Z" fill="#879b99" opacity=".46"/>
                 <path d="M0 278 116 220l86 43 90-46 97 59 82-43 92 48v44H0Z" fill="#708783" opacity=".43"/>
@@ -685,6 +699,7 @@
                 <path d="M649 139v266m21-266v266" stroke="#ffe08a" stroke-width="1.2" opacity=".6"/>
 
                 <!-- Machinery deck and cabin -->
+                <g id="crane-slew" transform="rotate(0 660 128)">
                 <path d="m626 125 40-20 35 11-40 21z" fill="#f6c451" stroke="#bd842b" stroke-width="1.5"/>
                 <path d="m631 119 29-15 24 8-29 15z" fill="#ffe294"/>
                 <path d="m659 134 27-16 29 9-27 16z" fill="#374b52" stroke="#253a42" stroke-width="2"/>
@@ -707,11 +722,15 @@
                 <path d="m675 105 284-15" stroke="#fff2c2" stroke-width="2" opacity=".75"/>
                 <path d="m957 94 20-9m-20 15 22-8m-31-9 27 22" fill="none" stroke="#657578" stroke-width="2"/>
                 <path d="M734 117v15m12-16v18m83-24v17m12-18v19m83-24v17m12-18v19" stroke="#776035" stroke-width="1.4"/>
+                </g>
 
                 <!-- Trolley, hoist cable, hook, and illustrative load -->
+                <g id="trolley-carriage" transform="translate(752.5 128) rotate(0) translate(-834 -116)">
                 <path d="m816 105 34-2 3 10-35 3z" fill="#4a5656" stroke="#303d40" stroke-width="1.5"/>
                 <circle cx="821" cy="116" r="4" fill="#2f4144"/>
                 <circle cx="846" cy="114" r="4" fill="#2f4144"/>
+                </g>
+                <g id="hoist-assembly" transform="translate(-81.5 12)">
                 <path d="M834 116v178" stroke="#5b6260" stroke-width="2.2"/>
                 <path d="M830 294h9" stroke="#353d3c" stroke-width="3"/>
                 <path d="M835 294v13c0 13-16 15-17 3" fill="none" stroke="#353d3c" stroke-width="4" stroke-linecap="round"/>
@@ -720,6 +739,7 @@
                 <path d="m835 340 39-17v23l-39 17z" fill="#725a38" stroke="#5b4931" stroke-width="1.2"/>
                 <path d="m802 328 33 11m-35-5 33 11m-8-16v23m14-27v27m14-33v27" stroke="#edc16c" stroke-width="1.3" opacity=".8"/>
                 <path d="m790 363 45 16 44-19" fill="none" stroke="#e6d19f" stroke-width="2" stroke-dasharray="5 5" opacity=".65"/>
+                </g>
 
                 <!-- Site equipment and safety markers -->
                 <path d="m89 389 46-17 51 18-47 18z" fill="#d99f38"/>
@@ -824,7 +844,7 @@
             </div>
             <div class="chart-foot">
               <span class="chart-key"><i></i>Supplied illustrative chart values</span>
-              <span>Current radius preview: 50 ft - no load attached</span>
+              <span>Reference chart only - calculations are not active in this stage</span>
             </div>
           </section>
         </section>
@@ -842,13 +862,13 @@
             </div>
             <div class="controls-body">
               <p class="control-group-label">Swing jib / move trolley</p>
-              <div class="direction-pad" aria-label="Decorative directional control preview">
+              <div class="direction-pad" aria-label="Hold a direction to move the crane">
                 <span class="key-button empty" aria-hidden="true"></span>
-                <button class="key-button vertical" type="button" disabled aria-label="Trolley outward, up arrow">↑<span>OUT</span></button>
+                <button class="key-button vertical" type="button" data-control="trolley-out" aria-label="Move trolley outward, up arrow">↑<span>OUT</span></button>
                 <span class="key-button empty" aria-hidden="true"></span>
-                <button class="key-button" type="button" disabled aria-label="Swing left, left arrow">←</button>
-                <button class="key-button vertical" type="button" disabled aria-label="Trolley inward, down arrow">↓<span>IN</span></button>
-                <button class="key-button" type="button" disabled aria-label="Swing right, right arrow">→</button>
+                <button class="key-button" type="button" data-control="jib-left" aria-label="Swing jib counterclockwise, left arrow">←</button>
+                <button class="key-button vertical" type="button" data-control="trolley-in" aria-label="Move trolley inward, down arrow">↓<span>IN</span></button>
+                <button class="key-button" type="button" data-control="jib-right" aria-label="Swing jib clockwise, right arrow">→</button>
               </div>
               <div class="key-legend">
                 <span><kbd>←</kbd><kbd>→</kbd> Swing</span>
@@ -856,14 +876,15 @@
               </div>
               <p class="control-group-label">Raise / lower hook</p>
               <div class="hook-control">
-                <button class="hook-key" type="button" disabled><kbd>W</kbd> Raise</button>
-                <button class="hook-key" type="button" disabled><kbd>S</kbd> Lower</button>
+                <button class="hook-key" type="button" data-control="hook-up"><kbd>W</kbd> Raise</button>
+                <button class="hook-key" type="button" data-control="hook-down"><kbd>S</kbd> Lower</button>
               </div>
               <div class="action-key">
                 <span>Pick up / deliver</span>
                 <span class="action-caption"><kbd>SPACE</kbd></span>
               </div>
-              <p class="stage-note"><strong>Stage 1 preview:</strong> controls are visual only and are not active yet.</p>
+              <p class="stage-note"><strong>Movement:</strong> trolley 5 ft/s, jib 5 deg/s, hook 3 ft/s. The mast is the origin; angle 0 follows +x, and positive rotation is counterclockwise.</p>
+              <p class="stage-note">Hold a button or keyboard key to move. Opposing directions cancel. Pickup and delivery remain inactive until Stage 3.</p>
             </div>
           </section>
 
@@ -951,11 +972,144 @@
       <footer>
         <div class="disclaimer">
           <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 3 2.8 19h18.4L12 3Z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><path d="M12 9v4m0 3h.01" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
-          <span><strong>Educational simulator only.</strong> This simplified visual mockup is not a real crane specification, engineering tool, operator-training replacement, or source for real-world lifting or construction-site safety decisions.</span>
+          <span><strong>Educational simulator only.</strong> This simplified simulator is not a real crane specification, engineering tool, operator-training replacement, or source for real-world lifting or construction-site safety decisions.</span>
         </div>
-        <div class="footer-note">Stage 1 visual mockup - displayed values are placeholders until simulator behavior is implemented.</div>
+        <div class="footer-note">Stage 2 movement preview - load interaction and safety calculations arrive in later stages.</div>
       </footer>
     </main>
   </div>
+  <script>
+    (() => {
+      const state = {
+        radius: 50,
+        jibAngle: 0,
+        hookHeight: 0
+      };
+      const keyboardInputs = new Set();
+      const pointerInputs = new Map();
+      const controls = Array.from(document.querySelectorAll("[data-control]"));
+      const radiusReadout = document.getElementById("radius-readout");
+      const angleReadout = document.getElementById("angle-readout");
+      const heightReadout = document.getElementById("height-readout");
+      const craneSlew = document.getElementById("crane-slew");
+      const trolleyCarriage = document.getElementById("trolley-carriage");
+      const hoistAssembly = document.getElementById("hoist-assembly");
+      const keyControls = {
+        ArrowLeft: "jib-left",
+        ArrowRight: "jib-right",
+        ArrowUp: "trolley-out",
+        ArrowDown: "trolley-in",
+        KeyW: "hook-up",
+        KeyS: "hook-down"
+      };
+      let previousFrame = null;
+
+      function isPressed(control) {
+        if (keyboardInputs.has(control)) return true;
+        for (const activeControl of pointerInputs.values()) {
+          if (activeControl === control) return true;
+        }
+        return false;
+      }
+
+      function refreshControlStyles() {
+        controls.forEach((button) => {
+          button.classList.toggle("is-pressed", isPressed(button.dataset.control));
+        });
+      }
+
+      function formatPosition(value) {
+        return String(Math.round(value * 100) / 100);
+      }
+
+      function renderPosition() {
+        const angleRadians = state.jibAngle * Math.PI / 180;
+        const trolleyDistance = state.radius * 1.85;
+        const trolleyX = 660 + trolleyDistance * Math.cos(angleRadians);
+        const trolleyY = 128 - trolleyDistance * Math.sin(angleRadians);
+
+        radiusReadout.textContent = formatPosition(state.radius) + " ft";
+        angleReadout.textContent = formatPosition(state.jibAngle) + " deg";
+        heightReadout.textContent = formatPosition(state.hookHeight) + " ft";
+        craneSlew.setAttribute("transform", "rotate(" + -state.jibAngle + " 660 128)");
+        trolleyCarriage.setAttribute(
+          "transform",
+          "translate(" + trolleyX + " " + trolleyY + ") rotate(" + -state.jibAngle + ") translate(-834 -116)"
+        );
+        hoistAssembly.setAttribute(
+          "transform",
+          "translate(" + (trolleyX - 834) + " " + (trolleyY - 116 - state.hookHeight * 1.35) + ")"
+        );
+      }
+
+      function normalizeAngle(angle) {
+        return (angle % 360 + 360) % 360;
+      }
+
+      function animate(timestamp) {
+        if (previousFrame !== null) {
+          const elapsedSeconds = (timestamp - previousFrame) / 1000;
+          const jibDirection = Number(isPressed("jib-left")) - Number(isPressed("jib-right"));
+          const trolleyDirection = Number(isPressed("trolley-out")) - Number(isPressed("trolley-in"));
+          const hookDirection = Number(isPressed("hook-up")) - Number(isPressed("hook-down"));
+
+          if (jibDirection || trolleyDirection || hookDirection) {
+            state.jibAngle = normalizeAngle(state.jibAngle + jibDirection * 5 * elapsedSeconds);
+            state.radius = Math.max(50, Math.min(150, state.radius + trolleyDirection * 5 * elapsedSeconds));
+            state.hookHeight = Math.max(0, Math.min(100, state.hookHeight + hookDirection * 3 * elapsedSeconds));
+            renderPosition();
+          }
+        }
+        previousFrame = timestamp;
+        requestAnimationFrame(animate);
+      }
+
+      window.addEventListener("keydown", (event) => {
+        const control = keyControls[event.code];
+        if (!control) return;
+        event.preventDefault();
+        keyboardInputs.add(control);
+        refreshControlStyles();
+      });
+
+      window.addEventListener("keyup", (event) => {
+        const control = keyControls[event.code];
+        if (!control) return;
+        keyboardInputs.delete(control);
+        refreshControlStyles();
+      });
+
+      controls.forEach((button) => {
+        button.addEventListener("pointerdown", (event) => {
+          event.preventDefault();
+          pointerInputs.set(event.pointerId, button.dataset.control);
+          button.setPointerCapture(event.pointerId);
+          refreshControlStyles();
+        });
+        const releasePointer = (event) => {
+          pointerInputs.delete(event.pointerId);
+          refreshControlStyles();
+        };
+        button.addEventListener("pointerup", releasePointer);
+        button.addEventListener("pointercancel", releasePointer);
+        button.addEventListener("lostpointercapture", releasePointer);
+      });
+
+      function releaseAllInputs() {
+        keyboardInputs.clear();
+        pointerInputs.clear();
+        refreshControlStyles();
+        previousFrame = null;
+      }
+
+      window.addEventListener("blur", releaseAllInputs);
+      document.addEventListener("visibilitychange", () => {
+        if (document.hidden) releaseAllInputs();
+      });
+
+      renderPosition();
+      requestAnimationFrame(animate);
+    })();
+  </script>
 </body>
 </html>
